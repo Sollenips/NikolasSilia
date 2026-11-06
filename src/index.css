@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== Colorblind accessibility mode ===== */
+/* When cb-mode is active, category badges use high-contrast patterns + labels
+   instead of relying on color hue alone. We also boost contrast site-wide. */
+
+html.cb-mode body {
+  /* Slightly increase base contrast */
+  filter: contrast(1.08);
+}
+
+/* Category badges: in cb-mode, replace subtle tinted backgrounds with
+   bold borders + an underline pattern so categories are distinguishable
+   without relying on hue. */
+html.cb-mode .cb-badge {
+  border-width: 2px !important;
+  font-weight: 700 !important;
+}
+
+/* Distinctive per-category border styles so they're told apart by pattern */
+html.cb-mode .cb-badge-martial  { border-style: solid !important;  border-color: #1a1a1a !important; }
+html.cb-mode .cb-badge-music    { border-style: dashed !important; border-color: #1a1a1a !important; }
+html.cb-mode .cb-badge-dance    { border-style: dotted !important; border-color: #1a1a1a !important; }
+html.cb-mode .cb-badge-art      { border-style: double !important; border-color: #1a1a1a !important; }
+html.cb-mode .cb-badge-yoga     { border-style: solid !important;  border-color: #444 !important; background: repeating-linear-gradient(45deg, #eee 0 4px, #fff 4px 8px) !important; }
+html.cb-mode .cb-badge-swim     { border-style: dashed !important; border-color: #444 !important; background: repeating-linear-gradient(90deg, #eee 0 4px, #fff 4px 8px) !important; }
+html.cb-mode .cb-badge-lang     { border-style: dotted !important; border-color: #444 !important; background: repeating-linear-gradient(0deg, #eee 0 4px, #fff 4px 8px) !important; }
+html.cb-mode .cb-badge-tennis   { border-style: double !important; border-color: #444 !important; }
+html.cb-mode .cb-badge-bball    { border-style: solid !important;  border-color: #888 !important; background: #eee !important; }
+html.cb-mode .cb-badge-gym      { border-style: dashed !important; border-color: #888 !important; background: #eee !important; }
+html.cb-mode .cb-badge-theater  { border-style: dotted !important; border-color: #888 !important; background: #eee !important; }
+html.cb-mode .cb-badge-football { border-style: double !important; border-color: #888 !important; background: #eee !important; }
+
+/* Ensure text is always dark/readable on badges in cb-mode */
+html.cb-mode .cb-badge { color: #111 !important; }
+
+/* Boost focus outlines for keyboard navigation visibility */
+html.cb-mode *:focus-visible {
+  outline: 3px solid #000 !important;
+  outline-offset: 2px !important;
+}
+
+/* ===== Leaflet map markers ===== */
+.byc-marker {
+  width: 28px;
+  height: 28px;
+}
+.byc-marker-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2.5px solid white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  margin: 0 auto;
+}
+.marker-rose .byc-marker-dot { background: #e11d48; }
+.marker-violet .byc-marker-dot { background: #7c3aed; }
+.marker-pink .byc-marker-dot { background: #db2777; }
+.marker-amber .byc-marker-dot { background: #d97706; }
+.marker-emerald .byc-marker-dot { background: #059669; }
+.marker-sky .byc-marker-dot { background: #0284c7; }
+.marker-indigo .byc-marker-dot { background: #4f46e5; }
+.marker-lime .byc-marker-dot { background: #65a30d; }
+.marker-orange .byc-marker-dot { background: #ea580c; }
+.marker-stone .byc-marker-dot { background: #57534e; }
+.marker-fuchsia .byc-marker-dot { background: #c026d3; }
+.marker-green .byc-marker-dot { background: #16a34a; }
+
+/* Leaflet popup styling */
+.leaflet-popup-content-wrapper {
+  border-radius: 14px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
+}
+.leaflet-popup-content {
+  margin: 12px !important;
+}
+.leaflet-container {
+  font-family: inherit !important;
+}
