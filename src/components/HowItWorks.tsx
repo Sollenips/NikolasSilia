@@ -5,7 +5,6 @@ const STEPS = [
   { icon: Search, title: 'how.s1.title', desc: 'how.s1.desc' },
   { icon: Layers, title: 'how.s2.title', desc: 'how.s2.desc' },
   { icon: CalendarCheck, title: 'how.s3.title', desc: 'how.s3.desc' },
-  { icon: BadgeCheck, title: 'how.s4.title', desc: 'how.s4.desc' },
 ] as const;
 
 export function HowItWorks() {
@@ -17,7 +16,7 @@ export function HowItWorks() {
         <h2 className="text-3xl font-extrabold text-stone-900 mb-2">{t('how.title')}</h2>
         <p className="text-stone-500">{t('how.subtitle')}</p>
       </div>
-      <ol className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <ol className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {STEPS.map((step, index) => {
           const Icon = step.icon;
           return (

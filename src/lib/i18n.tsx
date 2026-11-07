@@ -6,7 +6,7 @@ type Dict = Record<string, { en: string; el: string }>;
 
 const dict: Dict = {
   // Header
-  'nav.browse': { en: 'Browse Classes', el: 'Περιήγηση Μαθημάτων' },
+  'nav.browse': { en: 'Classes', el: 'Μαθήματα' },
   'nav.howItWorks': { en: 'How It Works', el: 'Πώς Λειτουργεί' },
   'nav.areas': { en: 'Areas', el: 'Περιοχές' },
   'nav.book': { en: 'Book', el: 'Κράτηση' },
@@ -152,7 +152,7 @@ const dict: Dict = {
   'footer.desc': { en: 'Discover and book classes from trusted local studios across Athens.', el: 'Ανακάλυψε και κλείσε μαθήματα από αξιόπιστα τοπικά στούντιο σε όλη την Αθήνα.' },
   'footer.areasCover': { en: 'Areas we cover', el: 'Περιοχές που καλύπτουμε' },
   'how.title': { en: 'How it works', el: 'Πώς λειτουργεί' },
-  'how.subtitle': { en: 'Book a class in four simple steps', el: 'Κλείσε ένα μάθημα σε τέσσερα απλά βήματα' },
+  'how.subtitle': { en: 'Book a class in three simple steps', el: 'Κλείσε ένα μάθημα σε τρία απλά βήματα' },
   'how.s1.title': { en: 'Choose your area', el: 'Διάλεξε περιοχή' },
   'how.s1.desc': { en: 'Pick the area, age group and interest that fit your child, or search by class name.', el: 'Επίλεξε την περιοχή, την ηλικιακή ομάδα και το ενδιαφέρον που ταιριάζουν στο παιδί σου, ή ψάξε με το όνομα του μαθήματος.' },
   'how.s2.title': { en: 'Compare classes', el: 'Σύγκρινε τα μαθήματα' },
