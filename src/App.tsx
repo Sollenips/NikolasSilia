@@ -1,292 +1,100 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase, type ClassItem, type BookingInput } from '@/lib/supabase';
-import { I18nProvider, useI18n } from '@/lib/i18n';
-import { AuthProvider, useAuth } from '@/lib/auth';
-import { AccessibilityProvider } from '@/lib/accessibility';
-import { Header } from '@/components/Header';
-import { Hero } from '@/components/Hero';
-import { HowItWorks } from '@/components/HowItWorks';
-import { ClassCard } from '@/components/ClassCard';
-import { ClassDetail } from '@/components/ClassDetail';
-import { BookingForm } from '@/components/BookingForm';
-import { BookingSuccess } from '@/components/BookingSuccess';
-import { Footer } from '@/components/Footer';
-import { AuthPage } from '@/components/AuthPage';
-import { AdminDashboard } from '@/components/AdminDashboard';
-import { StudioOwnerDashboard } from '@/components/StudioOwnerDashboard';
-import { StudioListingModal } from '@/components/StudioListingModal';
-import { MapView } from '@/components/MapView';
-import { Search, X, Loader2, Map, LayoutGrid } from 'lucide-react';
+import React, { useState } from 'react';
+import { Timer, Mail, CheckCircle2, Globe, Instagram, Facebook } from 'lucide-react';
 
-type View =
-  | { name: 'browse' }
-  | { name: 'detail'; classId: string }
-  | { name: 'book'; classId: string }
-  | { name: 'success'; className: string }
-  | { name: 'admin' };
+function App() {
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
-function AppContent() {
-  const { t } = useI18n();
-  const { user, loading: authLoading, isAdmin, ownedStoreId, roleLoading, signOut } = useAuth();
-  const [view, setView] = useState<View>({ name: 'browse' });
-  const [classes, setClasses] = useState<ClassItem[]>([]);
-  const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterArea, setFilterArea] = useState<string>('all');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [filterAge, setFilterAge] = useState<string>('all');
-  const [listingOpen, setListingOpen] = useState(false);
-  const [browseMode, setBrowseMode] = useState<'list' | 'map'>('list');
-
-  const fetchClasses = useCallback(async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('classes')
-      .select('*, store:stores(*)')
-      .order('created_at', { ascending: true });
-    if (error) {
-      console.error('Error fetching classes:', error);
-    } else if (data) {
-      setClasses(data as ClassItem[]);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email.trim()) {
+      setSubmitted(true);
+      setEmail('');
     }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchClasses();
-  }, [fetchClasses]);
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [view]);
-
-  const handleSelectClass = (cls: ClassItem) => {
-    setSelectedClass(cls);
-    setView({ name: 'detail', classId: cls.id });
-  };
-
-  const handleStartBooking = (cls: ClassItem) => {
-    setView({ name: 'book', classId: cls.id });
-  };
-
-  const handleSubmitBooking = async (input: BookingInput) => {
-    const { error } = await supabase.from('bookings').insert([input]);
-    if (error) throw error;
-    setView({ name: 'success', className: selectedClass?.title ?? '' });
-  };
-
-  const handleBack = () => {
-    setView({ name: 'browse' });
-  };
-
-  const handleSelectArea = (area: string) => {
-    setFilterArea(area);
-    setView({ name: 'browse' });
-    requestAnimationFrame(() => {
-      document.getElementById('classes')?.scrollIntoView({ behavior: 'smooth' });
-    });
-  };
-
-  const filtered = classes.filter((cls) => {
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const match =
-        cls.title.toLowerCase().includes(q) ||
-        cls.description.toLowerCase().includes(q) ||
-        cls.category.toLowerCase().includes(q) ||
-        (cls.store?.name.toLowerCase().includes(q) ?? false) ||
-        (cls.store?.area.toLowerCase().includes(q) ?? false);
-      if (!match) return false;
-    }
-    if (filterArea !== 'all' && cls.store?.area !== filterArea) return false;
-    if (filterCategory !== 'all' && cls.category !== filterCategory) return false;
-    if (filterAge !== 'all') {
-      const age = parseInt(filterAge, 10);
-      if (age < cls.age_min) return false;
-      if (cls.age_max !== null && age > cls.age_max) return false;
-    }
-    return true;
-  });
-
-  const activeFilterCount =
-    (filterArea !== 'all' ? 1 : 0) +
-    (filterCategory !== 'all' ? 1 : 0) +
-    (filterAge !== 'all' ? 1 : 0);
-
-  const clearFilters = () => {
-    setFilterArea('all');
-    setFilterCategory('all');
-    setFilterAge('all');
-    setSearchQuery('');
   };
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-800 flex flex-col">
-      <Header
-        onLogoClick={handleBack}
-        onAdminClick={() => setView({ name: 'admin' })}
-        filterArea={filterArea}
-        onSelectArea={handleSelectArea}
-      />
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between font-sans relative overflow-hidden">
+      {/* Background Διακοσμητικά Εφέ (Glow) */}
+      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
 
-      <main className="flex-1">
-        {view.name === 'admin' && !user && !authLoading && (
-          <AuthPage onBack={handleBack} />
-        )}
+      {/* Top Header / Logo */}
+      <header className="container mx-auto px-6 py-8 flex justify-between items-center relative z-10">
+        <div className="flex items-center space-x-2">
+          <Globe className="h-6 w-6 text-blue-500" />
+          <span className="text-xl font-bold tracking-wider bg-gradient-to-r bg-clip-text text-transparent from-white to-slate-400">
+            NIKOLAS SILIA
+          </span>
+        </div>
+      </header>
 
-        {view.name === 'admin' && user && roleLoading && (
-          <div className="flex items-center justify-center py-24 text-stone-400">
-            <Loader2 className="w-8 h-8 animate-spin" />
-          </div>
-        )}
+      {/* Main Content */}
+      <main className="container mx-auto px-6 py-12 flex flex-col items-center justify-center text-center flex-grow relative z-10 max-w-2xl">
+        {/* Badge */}
+        <div className="inline-flex items-center space-x-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-1.5 text-sm text-blue-400 font-medium mb-8 animate-pulse">
+          <Timer className="h-4 w-4" />
+          <span>Έρχεται Σύντομα / Coming Soon</span>
+        </div>
 
-        {view.name === 'admin' && user && !roleLoading && isAdmin && (
-          <AdminDashboard onBack={handleBack} />
-        )}
+        {/* Τίτλος */}
+        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+          Κάτι εξαιρετικό είναι{' '}
+          <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500 bg-clip-text text-transparent">
+            καθ' οδόν
+          </span>
+        </h1>
 
-        {view.name === 'admin' && user && !roleLoading && !isAdmin && ownedStoreId && (
-          <StudioOwnerDashboard onBack={handleBack} />
-        )}
+        {/* Περιγραφή */}
+        <p className="text-slate-400 text-lg md:text-xl mb-12 leading-relaxed">
+          Ετοιμάζουμε τη νέα μας πλατφόρμα. Συμπληρώστε το email σας παρακάτω για να ενημερωθείτε πρώτοι μόλις είμαστε live!
+        </p>
 
-        {view.name === 'admin' && user && !roleLoading && !isAdmin && !ownedStoreId && (
-          <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 text-center bg-stone-50">
-            <h1 className="text-xl font-bold text-stone-900 mb-2">{t('owner.noAccessTitle')}</h1>
-            <p className="text-stone-500 text-sm max-w-md mb-6">{t('owner.noAccessText')}</p>
-            <div className="flex gap-3">
+        {/* Φόρμα Email */}
+        <div className="w-full max-w-md bg-slate-900/50 border border-slate-800 rounded-2xl p-2 backdrop-blur-sm">
+          {!submitted ? (
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-grow">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 h-5 w-5" />
+                <input
+                  type="email"
+                  required
+                  placeholder="Εισάγετε το email σας..."
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-11 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500/50 transition-colors"
+                />
+              </div>
               <button
-                onClick={handleBack}
-                className="px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-semibold hover:bg-teal-700 transition-colors"
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm rounded-xl px-6 py-3 transition-all duration-200 shadow-lg shadow-blue-600/20 active:scale-[0.98]"
               >
-                {t('admin.backToSite')}
+                Ενημέρωσή με
               </button>
-              <button
-                onClick={signOut}
-                className="px-4 py-2.5 rounded-xl border border-stone-200 text-sm font-semibold text-stone-600 hover:border-rose-300 hover:text-rose-600 transition-colors"
-              >
-                {t('auth.signOut')}
-              </button>
+            </form>
+          ) : (
+            <div className="flex items-center justify-center space-x-2 py-3 text-green-400 font-medium">
+              <CheckCircle2 className="h-5 w-5 shrink-0" />
+              <span>Ευχαριστούμε! Θα ενημερωθείτε σύντομα.</span>
             </div>
-          </div>
-        )}
-
-        {view.name === 'browse' && (
-          <>
-            <Hero
-              onSearch={setSearchQuery}
-              searchValue={searchQuery}
-              filterArea={filterArea}
-              setFilterArea={setFilterArea}
-              filterCategory={filterCategory}
-              setFilterCategory={setFilterCategory}
-              filterAge={filterAge}
-              setFilterAge={setFilterAge}
-              activeFilterCount={activeFilterCount}
-              onClear={clearFilters}
-              onListStudio={() => setListingOpen(true)}
-            />
-            <HowItWorks />
-            <section id="classes" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-              {loading ? (
-                <div className="flex flex-col items-center justify-center py-24 text-stone-400">
-                  <Loader2 className="w-8 h-8 animate-spin mb-3" />
-                  <p>{t('browse.loading')}</p>
-                </div>
-              ) : filtered.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 text-center">
-                  <div className="w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center mb-4">
-                    <Search className="w-7 h-7 text-stone-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-stone-700 mb-1">{t('browse.noResults')}</h3>
-                  <p className="text-stone-500 mb-4">{t('browse.tryAdjusting')}</p>
-                  <button
-                    onClick={clearFilters}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 transition-colors"
-                  >
-                    <X className="w-4 h-4" /> {t('browse.clearAll')}
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-                    <h2 className="text-2xl font-bold text-stone-900">
-                      {filtered.length} {filtered.length === 1 ? t('browse.classAvailable') : t('browse.classesAvailable')}
-                    </h2>
-                    <div className="flex items-center gap-1 p-1 rounded-xl bg-stone-100 border border-stone-200 self-start sm:self-auto">
-                      <button
-                        onClick={() => setBrowseMode('list')}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                          browseMode === 'list' ? 'bg-white text-teal-600 shadow-sm' : 'text-stone-500 hover:text-stone-700'
-                        }`}
-                      >
-                        <LayoutGrid className="w-4 h-4" />
-                        {t('browse.viewList')}
-                      </button>
-                      <button
-                        onClick={() => setBrowseMode('map')}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                          browseMode === 'map' ? 'bg-white text-teal-600 shadow-sm' : 'text-stone-500 hover:text-stone-700'
-                        }`}
-                      >
-                        <Map className="w-4 h-4" />
-                        {t('browse.viewMap')}
-                      </button>
-                    </div>
-                  </div>
-                  {browseMode === 'map' ? (
-                    <>
-                      <p className="text-sm text-stone-500 mb-4">{t('browse.mapHint')}</p>
-                      <MapView classes={filtered} onSelectClass={handleSelectClass} />
-                    </>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {filtered.map((cls) => (
-                        <ClassCard key={cls.id} cls={cls} onSelect={handleSelectClass} />
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </section>
-          </>
-        )}
-
-        {view.name === 'detail' && selectedClass && (
-          <ClassDetail
-            cls={selectedClass}
-            onBack={handleBack}
-            onBook={handleStartBooking}
-          />
-        )}
-
-        {view.name === 'book' && selectedClass && (
-          <BookingForm
-            cls={selectedClass}
-            onBack={() => setView({ name: 'detail', classId: selectedClass.id })}
-            onSubmit={handleSubmitBooking}
-          />
-        )}
-
-        {view.name === 'success' && (
-          <BookingSuccess className={view.className} onBack={handleBack} />
-        )}
+          )}
+        </div>
       </main>
 
-      <Footer onListStudio={() => setListingOpen(true)} />
-
-      <StudioListingModal open={listingOpen} onClose={() => setListingOpen(false)} />
+      {/* Footer / Social Links */}
+      <footer className="container mx-auto px-6 py-8 flex flex-col sm:flex-row justify-between items-center border-t border-slate-900 text-sm text-slate-500 relative z-10 gap-4">
+        <p>© {new Date().getFullYear()} Nikolas Silia. All rights reserved.</p>
+        <div className="flex space-x-4">
+          <a href="#" className="hover:text-slate-300 transition-colors">
+            <Instagram className="h-5 w-5" />
+          </a>
+          <a href="#" className="hover:text-slate-300 transition-colors">
+            <Facebook className="h-5 w-5" />
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }
 
-export default function App() {
-  return (
-    <I18nProvider>
-      <AuthProvider>
-        <AccessibilityProvider>
-          <AppContent />
-        </AccessibilityProvider>
-      </AuthProvider>
-    </I18nProvider>
-  );
-}
+export default App;
