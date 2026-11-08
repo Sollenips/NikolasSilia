@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { createClient } from '@supabase/supabase-client';
+import { createClient } from '@supabase/supabase-js';
 
 // Σύνδεση με τη δική σου Supabase
 const supabaseUrl = 'https://supabase.co';
