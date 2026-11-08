@@ -13,6 +13,7 @@ const dict: Dict = {
   'nav.yourClass': { en: '@Class', el: '@Class' },
   'nav.accessibility': { en: 'Accessibility', el: 'Προσβασιμότητα' },
   'nav.colorblindMode': { en: 'Colorblind mode', el: 'Λειτουργία χρωματισμού' },
+  'nav.listSchool': { en: 'List your school', el: 'Δήλωσε τη σχολή σου' },
 
   // Hero
   'hero.badge': { en: 'Now serving {count} areas across Athens', el: 'Τώρα σε {count} περιοχές της Αθήνας' },

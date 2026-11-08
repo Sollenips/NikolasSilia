@@ -1,4 +1,4 @@
-import { CalendarCheck, LogIn, LayoutDashboard, Eye, ChevronDown, Check } from 'lucide-react';
+import { CalendarCheck, LogIn, LayoutDashboard, Eye, ChevronDown, Check, Store as StoreIcon } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
@@ -9,6 +9,7 @@ import type { Store } from '@/lib/supabase';
 type Props = {
   onLogoClick: () => void;
   onAdminClick: () => void;
+  onListSchool: () => void;
   schools: Store[];
   filterSchool: string | null;
   onSelectSchool: (schoolId: string | null) => void;
@@ -16,7 +17,7 @@ type Props = {
 
 type OpenMenu = 'accessibility' | 'schools' | null;
 
-export function Header({ onLogoClick, onAdminClick, schools, filterSchool, onSelectSchool }: Props) {
+export function Header({ onLogoClick, onAdminClick, onListSchool, schools, filterSchool, onSelectSchool }: Props) {
   const { t, tArea, lang, setLang } = useI18n();
   const { user } = useAuth();
   const { cbMode, setCbMode } = useAccessibility();
@@ -78,10 +79,6 @@ export function Header({ onLogoClick, onAdminClick, schools, filterSchool, onSel
               <a href="#classes" className="hover:text-teal-600 transition-colors">
                 {t('nav.browse')}
               </a>
-              <a href="#how-it-works" className="hover:text-teal-600 transition-colors">
-                {t('nav.howItWorks')}
-              </a>
-
               <div className="relative" ref={schoolMenuRef}>
                 <button
                   onClick={() => toggleMenu('schools')}
@@ -133,6 +130,16 @@ export function Header({ onLogoClick, onAdminClick, schools, filterSchool, onSel
                   </div>
                 )}
               </div>
+              <a href="#how-it-works" className="hover:text-teal-600 transition-colors">
+                {t('nav.howItWorks')}
+              </a>
+              <button
+                onClick={onListSchool}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-teal-600 text-white font-semibold hover:bg-teal-700 transition-colors shadow-sm"
+              >
+                <StoreIcon className="w-4 h-4" />
+                {t('nav.listSchool')}
+              </button>
             </nav>
 
             {/* Colorblind accessibility toggle */}

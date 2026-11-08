@@ -267,6 +267,7 @@ function AppContent() {
       <Header
         onLogoClick={() => goTo('browse')}
         onAdminClick={handleAccountClick}
+        onListSchool={() => setListingOpen(true)}
         schools={schools}
         filterSchool={filterSchool}
         onSelectSchool={handleSelectSchool}
