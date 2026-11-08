@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, MapPin, Sparkles, Store, X } from 'lucide-react';
+import { Search, MapPin, Sparkles, X } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { AREAS, CATEGORIES } from '@/lib/constants';
 
@@ -14,7 +14,6 @@ type Props = {
   setFilterAge: (v: string) => void;
   activeFilterCount: number;
   onClear: () => void;
-  onListStudio: () => void;
 };
 
 export function Hero({
@@ -28,7 +27,6 @@ export function Hero({
   setFilterAge,
   activeFilterCount,
   onClear,
-  onListStudio,
 }: Props) {
   const { t, tArea, tCat } = useI18n();
   const [showAllAreas, setShowAllAreas] = useState(false);
@@ -135,17 +133,6 @@ export function Hero({
                 </button>
               </div>
             )}
-          </div>
-
-          {/* Studio listing CTA */}
-          <div className="flex flex-wrap items-center gap-3 mt-6">
-            <button
-              onClick={onListStudio}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white text-teal-700 font-semibold text-sm shadow-lg shadow-teal-900/20 hover:bg-teal-50 active:scale-[0.98] transition-all"
-            >
-              <Store className="w-4 h-4" />
-              {t('listing.cta')}
-            </button>
           </div>
 
           {/* Area chips */}

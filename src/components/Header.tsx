@@ -147,7 +147,6 @@ export function Header({ onLogoClick, onAdminClick, schools, filterSchool, onSel
                 aria-expanded={openMenu === 'accessibility'}
               >
                 <Eye className="w-4 h-4" />
-                <span className="hidden sm:inline">{t('nav.accessibility')}</span>
               </button>
               {openMenu === 'accessibility' && (
                 <div className="absolute right-0 mt-2 w-60 bg-white rounded-xl border border-stone-200 shadow-lg py-2 z-50">
