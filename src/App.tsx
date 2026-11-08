@@ -1,87 +1,268 @@
-import React, { useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Loader2, AlertCircle, LayoutList, Map as MapIcon } from 'lucide-react';
+import { Header } from '@/components/Header';
+import { Hero } from '@/components/Hero';
+import { ClassCard } from '@/components/ClassCard';
+import { ClassDetail } from '@/components/ClassDetail';
+import { BookingForm } from '@/components/BookingForm';
+import { BookingSuccess } from '@/components/BookingSuccess';
+import { MapView } from '@/components/MapView';
+import { HowItWorks } from '@/components/HowItWorks';
+import { Footer } from '@/components/Footer';
+import { StudioListingModal } from '@/components/StudioListingModal';
+import { AuthPage } from '@/components/AuthPage';
+import { AdminDashboard } from '@/components/AdminDashboard';
+import { StudioOwnerDashboard } from '@/components/StudioOwnerDashboard';
+import { AccessibilityProvider } from '@/lib/accessibility';
+import { AuthProvider, useAuth } from '@/lib/auth';
+import { I18nProvider, useI18n } from '@/lib/i18n';
+import { supabase, type BookingInput, type ClassItem } from '@/lib/supabase';
 
-// Σύνδεση με τη δική σου Supabase
-const supabaseUrl = 'https://supabase.co';
-const supabaseAnonKey = 'sb_publishable_default'; // Το Bolt θα τραβήξει το κλειδί αυτόματα
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+type View = 'browse' | 'detail' | 'booking' | 'success' | 'auth' | 'dashboard';
 
-function App() {
-  const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+const AGE_RANGES: Record<string, [number, number]> = {
+  '4': [4, 6],
+  '7': [7, 9],
+  '10': [10, 12],
+  '13': [13, 17],
+  '18': [18, 99],
+};
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
+function matchesAge(cls: ClassItem, ageKey: string) {
+  const range = AGE_RANGES[ageKey];
+  if (!range) return true;
+  const [lo, hi] = range;
+  return cls.age_min <= hi && (cls.age_max ?? 99) >= lo;
+}
 
-    setStatus('loading');
+function AppContent() {
+  const { t } = useI18n();
+  const { user, isAdmin, roleLoading } = useAuth();
 
-    try {
-      // Αποθήκευση του email στη Supabase στον πίνακα subscribers
-      const { error } = await supabase
-        .from('subscribers')
-        .insert([{ email }]);
+  const [view, setView] = useState<View>('browse');
+  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
+  const [listingOpen, setListingOpen] = useState(false);
+  const [layout, setLayout] = useState<'list' | 'map'>('list');
 
-      if (error) throw error;
-      setStatus('success');
-      setEmail('');
-    } catch (err) {
-      console.error(err);
-      setStatus('error');
+  const [search, setSearch] = useState('');
+  const [filterArea, setFilterArea] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterAge, setFilterAge] = useState('all');
+
+  const goTo = useCallback((next: View) => {
+    setView(next);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
+  const fetchClasses = useCallback(async () => {
+    setLoading(true);
+    setLoadError(false);
+    const { data, error } = await supabase
+      .from('classes')
+      .select('*, store:stores(*)')
+      .order('created_at', { ascending: false });
+    if (error || !Array.isArray(data)) {
+      setLoadError(true);
+    } else {
+      setClasses(data as ClassItem[]);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchClasses();
+  }, [fetchClasses]);
+
+  useEffect(() => {
+    if (user && view === 'auth') goTo('dashboard');
+  }, [user, view, goTo]);
+
+  const filteredClasses = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return classes.filter((cls) => {
+      if (filterArea !== 'all' && cls.store?.area !== filterArea) return false;
+      if (filterCategory !== 'all' && cls.category !== filterCategory) return false;
+      if (!matchesAge(cls, filterAge)) return false;
+      if (!q) return true;
+      return [cls.title, cls.instructor, cls.category, cls.store?.name ?? '']
+        .some((field) => field.toLowerCase().includes(q));
+    });
+  }, [classes, search, filterArea, filterCategory, filterAge]);
+
+  const activeFilterCount =
+    (search.trim() ? 1 : 0) +
+    (filterArea !== 'all' ? 1 : 0) +
+    (filterCategory !== 'all' ? 1 : 0) +
+    (filterAge !== 'all' ? 1 : 0);
+
+  const clearFilters = () => {
+    setSearch('');
+    setFilterArea('all');
+    setFilterCategory('all');
+    setFilterAge('all');
+  };
+
+  const handleSelectClass = (cls: ClassItem) => {
+    setSelectedClass(cls);
+    goTo('detail');
+  };
+
+  const handleBookingSubmit = async (input: BookingInput) => {
+    const { error } = await supabase.from('bookings').insert(input);
+    if (error) throw new Error(t('booking.errorGeneric'));
+    goTo('success');
+  };
+
+  const handleAccountClick = () => {
+    goTo(user ? 'dashboard' : 'auth');
+  };
+
+  const renderHome = () => (
+    <>
+      <Hero
+        onSearch={setSearch}
+        searchValue={search}
+        filterArea={filterArea}
+        setFilterArea={setFilterArea}
+        filterCategory={filterCategory}
+        setFilterCategory={setFilterCategory}
+        filterAge={filterAge}
+        setFilterAge={setFilterAge}
+        activeFilterCount={activeFilterCount}
+        onClear={clearFilters}
+        onListStudio={() => setListingOpen(true)}
+      />
+
+      <section id="classes" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 scroll-mt-20">
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+          <div>
+            <p className="text-sm font-medium text-stone-500">
+              {filteredClasses.length}{' '}
+              {filteredClasses.length === 1 ? t('browse.classAvailable') : t('browse.classesAvailable')}
+            </p>
+          </div>
+          <div className="inline-flex rounded-xl border border-stone-200 bg-white p-1 shadow-sm">
+            <button
+              onClick={() => setLayout('list')}
+              aria-pressed={layout === 'list'}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+                layout === 'list' ? 'bg-teal-600 text-white' : 'text-stone-600 hover:text-teal-600'
+              }`}
+            >
+              <LayoutList className="w-4 h-4" />
+              {t('browse.viewList')}
+            </button>
+            <button
+              onClick={() => setLayout('map')}
+              aria-pressed={layout === 'map'}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
+                layout === 'map' ? 'bg-teal-600 text-white' : 'text-stone-600 hover:text-teal-600'
+              }`}
+            >
+              <MapIcon className="w-4 h-4" />
+              {t('browse.viewMap')}
+            </button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center gap-3 py-24 text-stone-500">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <span className="text-sm font-medium">{t('browse.loading')}</span>
+          </div>
+        ) : loadError ? (
+          <div className="flex items-center justify-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-6 py-12 text-red-700">
+            <AlertCircle className="w-5 h-5" />
+            <span className="text-sm font-medium">{t('browse.loadError')}</span>
+          </div>
+        ) : filteredClasses.length === 0 ? (
+          <div className="text-center py-24">
+            <p className="text-lg font-semibold text-stone-800">{t('browse.noResults')}</p>
+            <p className="mt-2 text-sm text-stone-500">{t('browse.tryAdjusting')}</p>
+            {activeFilterCount > 0 && (
+              <button
+                onClick={clearFilters}
+                className="mt-6 rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition-colors"
+              >
+                {t('browse.clearAll')}
+              </button>
+            )}
+          </div>
+        ) : layout === 'map' ? (
+          <div className="space-y-3">
+            <p className="text-sm text-stone-500">{t('browse.mapHint')}</p>
+            <MapView classes={filteredClasses} onSelectClass={handleSelectClass} />
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredClasses.map((cls) => (
+              <ClassCard key={cls.id} cls={cls} onSelect={handleSelectClass} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <HowItWorks />
+    </>
+  );
+
+  const renderView = () => {
+    switch (view) {
+      case 'detail':
+        return selectedClass && (
+          <ClassDetail cls={selectedClass} onBack={() => goTo('browse')} onBook={() => goTo('booking')} />
+        );
+      case 'booking':
+        return selectedClass && (
+          <BookingForm cls={selectedClass} onBack={() => goTo('detail')} onSubmit={handleBookingSubmit} />
+        );
+      case 'success':
+        return <BookingSuccess className={selectedClass?.title ?? ''} onBack={() => goTo('browse')} />;
+      case 'auth':
+        return <AuthPage onBack={() => goTo('browse')} />;
+      case 'dashboard':
+        if (roleLoading) {
+          return (
+            <div className="flex justify-center py-24 text-stone-500">
+              <Loader2 className="w-8 h-8 animate-spin" />
+            </div>
+          );
+        }
+        return isAdmin
+          ? <AdminDashboard onBack={() => goTo('browse')} />
+          : <StudioOwnerDashboard onBack={() => goTo('browse')} />;
+      default:
+        return renderHome();
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-4 font-sans relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.08)_0,transparent_100%)] pointer-events-none" />
-      
-      <div className="w-full max-w-md bg-slate-900/50 backdrop-blur-xl border border-slate-800 p-8 rounded-3xl shadow-2xl relative text-center">
-        <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-emerald-500/20">
-          <svg xmlns="http://w3.org" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
-        </div>
-
-        <h1 className="text-3xl font-black tracking-tight mb-2 bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-          Book@Class
-        </h1>
-        <p className="text-emerald-400 font-medium text-sm tracking-wider uppercase mb-4">
-          Coming Soon
-        </p>
-        <p className="text-slate-400 text-sm mb-8 leading-relaxed">
-          Η απόλυτη πλατφόρμα για να βρίσκεις και να κλείνεις μαθήματα στη σχολή σου. Η αναμονή σχεδόν τελείωσε!
-        </p>
-
-        {status === 'success' && (
-          <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl text-emerald-400 text-sm font-medium mb-4">
-            Ευχαριστούμε! Το email σου αποθηκεύτηκε με επιτυχία.
-          </div>
-        )}
-
-        {status === 'error' && (
-          <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl text-red-400 text-sm font-medium mb-4">
-            Κάτι πήγε στραβά. Δοκίμασε ξανά!
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            type="email"
-            required
-            placeholder="Εισάγετε το email σας..."
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={status === 'loading'}
-            className="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl focus:outline-none focus:border-emerald-500 text-sm text-slate-200 placeholder:text-slate-600 transition-colors disabled:opacity-50"
-          />
-          <button
-            type="submit"
-            disabled={status === 'loading'}
-            className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-semibold py-3 px-4 rounded-xl text-sm transition-colors shadow-lg shadow-emerald-500/10 disabled:opacity-50"
-          >
-            {status === 'loading' ? 'Αποθήκευση...' : 'Ενημερώστε με'}
-          </button>
-        </form>
-      </div>
+    <div className="min-h-screen flex flex-col bg-stone-50 text-stone-900">
+      <Header
+        onLogoClick={() => goTo('browse')}
+        onAdminClick={handleAccountClick}
+        filterArea={filterArea}
+        onSelectArea={setFilterArea}
+      />
+      <main className="flex-1">{renderView()}</main>
+      <Footer onListStudio={() => setListingOpen(true)} />
+      <StudioListingModal open={listingOpen} onClose={() => setListingOpen(false)} />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <I18nProvider>
+      <AuthProvider>
+        <AccessibilityProvider>
+          <AppContent />
+        </AccessibilityProvider>
+      </AuthProvider>
+    </I18nProvider>
   );
 }
 

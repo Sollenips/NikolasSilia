@@ -47,6 +47,7 @@ const dict: Dict = {
 
   // Browse results
   'browse.loading': { en: 'Loading classes...', el: 'Φόρτωση μαθημάτων...' },
+  'browse.loadError': { en: 'We could not load classes right now. Please refresh the page.', el: 'Δεν μπορέσαμε να φορτώσουμε τα μαθήματα. Ανανέωσε τη σελίδα.' },
   'browse.noResults': { en: 'No classes found', el: 'Δεν βρέθηκαν μαθήματα' },
   'browse.tryAdjusting': { en: 'Try adjusting your filters or search term.', el: 'Δοκίμασε να αλλάξεις τα φίλτρα ή την αναζήτηση.' },
   'browse.clearAll': { en: 'Clear all filters', el: 'Καθαρισμός φίλτρων' },
