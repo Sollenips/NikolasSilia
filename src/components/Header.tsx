@@ -3,23 +3,24 @@ import { useState, useRef, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useAccessibility } from '@/lib/accessibility';
-import { AREAS } from '@/lib/constants';
+import type { Store } from '@/lib/supabase';
 
 type Props = {
   onLogoClick: () => void;
   onAdminClick: () => void;
-  filterArea: string;
-  onSelectArea: (area: string) => void;
+  schools: Store[];
+  filterSchool: string | null;
+  onSelectSchool: (schoolId: string | null) => void;
 };
 
-type OpenMenu = 'accessibility' | 'areas' | null;
+type OpenMenu = 'accessibility' | 'schools' | null;
 
-export function Header({ onLogoClick, onAdminClick, filterArea, onSelectArea }: Props) {
+export function Header({ onLogoClick, onAdminClick, schools, filterSchool, onSelectSchool }: Props) {
   const { t, tArea, lang, setLang } = useI18n();
   const { user } = useAuth();
   const { cbMode, setCbMode } = useAccessibility();
   const [openMenu, setOpenMenu] = useState<OpenMenu>(null);
-  const areaMenuRef = useRef<HTMLDivElement>(null);
+  const schoolMenuRef = useRef<HTMLDivElement>(null);
   const a11yMenuRef = useRef<HTMLDivElement>(null);
 
   const toggleLang = () => setLang(lang === 'en' ? 'el' : 'en');
@@ -27,7 +28,7 @@ export function Header({ onLogoClick, onAdminClick, filterArea, onSelectArea }: 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (areaMenuRef.current?.contains(target) || a11yMenuRef.current?.contains(target)) return;
+      if (schoolMenuRef.current?.contains(target) || a11yMenuRef.current?.contains(target)) return;
       setOpenMenu(null);
     };
     document.addEventListener('mousedown', handler);
@@ -44,10 +45,15 @@ export function Header({ onLogoClick, onAdminClick, filterArea, onSelectArea }: 
     { value: 'tritanopia' as const, label: lang === 'en' ? 'Blue-blind (Tritanopia)' : 'Μπλε-τυφλός (Τριτανοπία)' },
   ];
 
-  const handleSelectArea = (area: string) => {
-    onSelectArea(area);
+  const handleSelectSchool = (schoolId: string | null) => {
+    onSelectSchool(schoolId);
     setOpenMenu(null);
   };
+
+  const optionClass = (selected: boolean) =>
+    `w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+      selected ? 'bg-teal-50 text-teal-700 font-semibold' : 'text-stone-700 hover:bg-stone-50'
+    }`;
 
   return (
     <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-stone-200">
@@ -75,54 +81,49 @@ export function Header({ onLogoClick, onAdminClick, filterArea, onSelectArea }: 
                 {t('nav.howItWorks')}
               </a>
 
-              <div className="relative" ref={areaMenuRef}>
+              <div className="relative" ref={schoolMenuRef}>
                 <button
-                  onClick={() => toggleMenu('areas')}
+                  onClick={() => toggleMenu('schools')}
                   className={`inline-flex items-center gap-1 transition-colors hover:text-teal-600 ${
-                    filterArea !== 'all' ? 'text-teal-600' : ''
+                    filterSchool !== null ? 'text-teal-600' : ''
                   }`}
-                  aria-expanded={openMenu === 'areas'}
+                  aria-expanded={openMenu === 'schools'}
                   aria-haspopup="listbox"
                 >
-                  {t('nav.areas')}
+                  {t('nav.schools')}
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform duration-200 ${openMenu === 'areas' ? 'rotate-180' : ''}`}
+                    className={`w-4 h-4 transition-transform duration-200 ${openMenu === 'schools' ? 'rotate-180' : ''}`}
                   />
                 </button>
-                {openMenu === 'areas' && (
+                {openMenu === 'schools' && (
                   <div
                     role="listbox"
-                    className="absolute left-1/2 -translate-x-1/2 mt-3 w-[min(90vw,28rem)] bg-white rounded-2xl border border-stone-200 shadow-xl p-2 z-50"
+                    className="absolute left-1/2 -translate-x-1/2 mt-3 w-[min(90vw,22rem)] bg-white rounded-2xl border border-stone-200 shadow-xl p-2 z-50"
                   >
                     <button
                       role="option"
-                      aria-selected={filterArea === 'all'}
-                      onClick={() => handleSelectArea('all')}
-                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
-                        filterArea === 'all'
-                          ? 'bg-teal-50 text-teal-700 font-semibold'
-                          : 'text-stone-700 hover:bg-stone-50'
-                      }`}
+                      aria-selected={filterSchool === null}
+                      onClick={() => handleSelectSchool(null)}
+                      className={optionClass(filterSchool === null)}
                     >
-                      {t('filter.allAreas')}
-                      {filterArea === 'all' && <Check className="w-4 h-4" />}
+                      {t('filter.allSchools')}
+                      {filterSchool === null && <Check className="w-4 h-4 shrink-0" />}
                     </button>
-                    <div className="grid grid-cols-2 gap-0.5 mt-1 max-h-80 overflow-y-auto">
-                      {AREAS.map((area) => {
-                        const selected = filterArea === area;
+                    <div className="mt-1 max-h-80 overflow-y-auto">
+                      {schools.map((school) => {
+                        const selected = filterSchool === school.id;
                         return (
                           <button
-                            key={area}
+                            key={school.id}
                             role="option"
                             aria-selected={selected}
-                            onClick={() => handleSelectArea(area)}
-                            className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm text-left transition-colors ${
-                              selected
-                                ? 'bg-teal-50 text-teal-700 font-semibold'
-                                : 'text-stone-700 hover:bg-stone-50'
-                            }`}
+                            onClick={() => handleSelectSchool(school.id)}
+                            className={optionClass(selected)}
                           >
-                            {tArea(area)}
+                            <span className="min-w-0">
+                              <span className="block truncate">{school.name}</span>
+                              <span className="block text-xs font-normal text-stone-500">{tArea(school.area)}</span>
+                            </span>
                             {selected && <Check className="w-4 h-4 shrink-0" />}
                           </button>
                         );

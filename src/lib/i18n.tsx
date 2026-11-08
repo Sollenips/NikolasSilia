@@ -8,7 +8,7 @@ const dict: Dict = {
   // Header
   'nav.browse': { en: 'Classes', el: 'Μαθήματα' },
   'nav.howItWorks': { en: 'How It Works', el: 'Πώς Λειτουργεί' },
-  'nav.areas': { en: 'Areas', el: 'Περιοχές' },
+  'nav.schools': { en: 'Schools', el: 'Σχολεία' },
   'nav.book': { en: 'Book', el: 'Κράτηση' },
   'nav.yourClass': { en: '@Class', el: '@Class' },
   'nav.accessibility': { en: 'Accessibility', el: 'Προσβασιμότητα' },
@@ -37,6 +37,7 @@ const dict: Dict = {
   'filter.active': { en: 'active', el: 'ενεργά' },
   'filter.clear': { en: 'Clear', el: 'Καθαρισμός' },
   'filter.allAreas': { en: 'All areas', el: 'Όλες οι περιοχές' },
+  'filter.allSchools': { en: 'All schools', el: 'Όλα τα σχολεία' },
   'filter.allCategories': { en: 'All categories', el: 'Όλες οι κατηγορίες' },
   'filter.allAges': { en: 'All ages', el: 'Όλες τις ηλικίες' },
   'filter.age.4-6': { en: '4–6 years', el: '4–6 ετών' },

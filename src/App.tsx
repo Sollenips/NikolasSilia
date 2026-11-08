@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2, AlertCircle, LayoutList, Map as MapIcon } from 'lucide-react';
+import { Loader2, AlertCircle, LayoutList, Map as MapIcon, X } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Hero } from '@/components/Hero';
 import { ClassCard } from '@/components/ClassCard';
@@ -16,7 +16,7 @@ import { StudioOwnerDashboard } from '@/components/StudioOwnerDashboard';
 import { AccessibilityProvider } from '@/lib/accessibility';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { I18nProvider, useI18n } from '@/lib/i18n';
-import { supabase, type BookingInput, type ClassItem } from '@/lib/supabase';
+import { supabase, type BookingInput, type ClassItem, type Store } from '@/lib/supabase';
 
 type View = 'browse' | 'detail' | 'booking' | 'success' | 'auth' | 'dashboard';
 
@@ -41,6 +41,7 @@ function AppContent() {
 
   const [view, setView] = useState<View>('browse');
   const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [schools, setSchools] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
@@ -51,6 +52,7 @@ function AppContent() {
   const [filterArea, setFilterArea] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterAge, setFilterAge] = useState('all');
+  const [filterSchool, setFilterSchool] = useState<string | null>(null);
 
   const goTo = useCallback((next: View) => {
     setView(next);
@@ -60,14 +62,15 @@ function AppContent() {
   const fetchClasses = useCallback(async () => {
     setLoading(true);
     setLoadError(false);
-    const { data, error } = await supabase
-      .from('classes')
-      .select('*, store:stores(*)')
-      .order('created_at', { ascending: false });
-    if (error || !Array.isArray(data)) {
+    const [classesRes, storesRes] = await Promise.all([
+      supabase.from('classes').select('*, store:stores(*)').order('created_at', { ascending: false }),
+      supabase.from('stores').select('*').order('name', { ascending: true }),
+    ]);
+    if (classesRes.error || !Array.isArray(classesRes.data) || storesRes.error || !Array.isArray(storesRes.data)) {
       setLoadError(true);
     } else {
-      setClasses(data as ClassItem[]);
+      setClasses(classesRes.data as ClassItem[]);
+      setSchools(storesRes.data as Store[]);
     }
     setLoading(false);
   }, []);
@@ -83,6 +86,7 @@ function AppContent() {
   const filteredClasses = useMemo(() => {
     const q = search.trim().toLowerCase();
     return classes.filter((cls) => {
+      if (filterSchool && cls.store_id !== filterSchool) return false;
       if (filterArea !== 'all' && cls.store?.area !== filterArea) return false;
       if (filterCategory !== 'all' && cls.category !== filterCategory) return false;
       if (!matchesAge(cls, filterAge)) return false;
@@ -90,16 +94,18 @@ function AppContent() {
       return [cls.title, cls.instructor, cls.category, cls.store?.name ?? '']
         .some((field) => field.toLowerCase().includes(q));
     });
-  }, [classes, search, filterArea, filterCategory, filterAge]);
+  }, [classes, search, filterSchool, filterArea, filterCategory, filterAge]);
 
   const activeFilterCount =
     (search.trim() ? 1 : 0) +
+    (filterSchool ? 1 : 0) +
     (filterArea !== 'all' ? 1 : 0) +
     (filterCategory !== 'all' ? 1 : 0) +
     (filterAge !== 'all' ? 1 : 0);
 
   const clearFilters = () => {
     setSearch('');
+    setFilterSchool(null);
     setFilterArea('all');
     setFilterCategory('all');
     setFilterAge('all');
@@ -108,6 +114,15 @@ function AppContent() {
   const handleSelectClass = (cls: ClassItem) => {
     setSelectedClass(cls);
     goTo('detail');
+  };
+
+  const handleSelectSchool = (schoolId: string | null) => {
+    setFilterSchool(schoolId);
+    if (view !== 'browse') {
+      goTo('browse');
+      return;
+    }
+    document.getElementById('classes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const handleBookingSubmit = async (input: BookingInput) => {
@@ -138,11 +153,20 @@ function AppContent() {
 
       <section id="classes" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 scroll-mt-20">
         <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
-          <div>
+          <div className="flex flex-wrap items-center gap-3">
             <p className="text-sm font-medium text-stone-500">
               {filteredClasses.length}{' '}
               {filteredClasses.length === 1 ? t('browse.classAvailable') : t('browse.classesAvailable')}
             </p>
+            {filterSchool && (
+              <button
+                onClick={() => setFilterSchool(null)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700 hover:bg-teal-100 transition-colors"
+              >
+                {schools.find((s) => s.id === filterSchool)?.name}
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
+              </button>
+            )}
           </div>
           <div className="inline-flex rounded-xl border border-stone-200 bg-white p-1 shadow-sm">
             <button
@@ -244,8 +268,9 @@ function AppContent() {
       <Header
         onLogoClick={() => goTo('browse')}
         onAdminClick={handleAccountClick}
-        filterArea={filterArea}
-        onSelectArea={setFilterArea}
+        schools={schools}
+        filterSchool={filterSchool}
+        onSelectSchool={handleSelectSchool}
       />
       <main className="flex-1">{renderView()}</main>
       <Footer onListStudio={() => setListingOpen(true)} />
