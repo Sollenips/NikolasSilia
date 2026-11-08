@@ -1,8 +1,9 @@
-import { CalendarCheck, Languages, LogIn, LayoutDashboard, Eye, ChevronDown, Check } from 'lucide-react';
+import { CalendarCheck, LogIn, LayoutDashboard, Eye, ChevronDown, Check } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useAccessibility } from '@/lib/accessibility';
+import { GreekFlag, UkFlag } from '@/components/FlagIcons';
 import type { Store } from '@/lib/supabase';
 
 type Props = {
@@ -175,13 +176,12 @@ export function Header({ onLogoClick, onAdminClick, schools, filterSchool, onSel
 
             <button
               onClick={onAdminClick}
+              aria-label={user ? 'Admin dashboard' : 'Sign in'}
+              title={user ? 'Admin dashboard' : 'Sign in'}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-200 text-sm font-semibold text-stone-600 hover:border-teal-300 hover:text-teal-600 transition-colors"
             >
               {user ? (
-                <>
-                  <LayoutDashboard className="w-4 h-4" />
-                  <span className="hidden sm:inline">{t('admin.title')}</span>
-                </>
+                <LayoutDashboard className="w-4 h-4" />
               ) : (
                 <>
                   <LogIn className="w-4 h-4" />
@@ -190,14 +190,25 @@ export function Header({ onLogoClick, onAdminClick, schools, filterSchool, onSel
               )}
             </button>
 
-            <button
-              onClick={toggleLang}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-200 text-sm font-semibold text-stone-600 hover:border-teal-300 hover:text-teal-600 transition-colors"
-              aria-label="Switch language"
-            >
-              <Languages className="w-4 h-4" />
-              {lang === 'en' ? 'EL' : 'EN'}
-            </button>
+            <div className="flex items-center gap-1.5" role="group" aria-label="Language">
+              {(['en', 'el'] as const).map((code) => {
+                const active = lang === code;
+                return (
+                  <button
+                    key={code}
+                    onClick={() => setLang(code)}
+                    aria-pressed={active}
+                    aria-label={code === 'en' ? 'English' : 'Ελληνικά'}
+                    title={code === 'en' ? 'English' : 'Ελληνικά'}
+                    className={`w-8 h-6 rounded-md overflow-hidden border-2 transition-all hover:scale-105 ${
+                      active ? 'border-teal-600 shadow-sm' : 'border-stone-200 opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    {code === 'en' ? <UkFlag className="w-full h-full" /> : <GreekFlag className="w-full h-full" />}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
