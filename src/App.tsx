@@ -1,146 +1,201 @@
-import React, { useState } from 'react';
-import { Timer, Mail, CheckCircle2, Globe, Instagram, Facebook } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { I18nProvider, useI18n } from '@/lib/i18n';
+import { AccessibilityProvider } from '@/lib/accessibility';
+import { AuthProvider, useAuth } from '@/lib/auth';
+import { supabase, type BookingInput, type ClassItem } from '@/lib/supabase';
+import { Header } from '@/components/Header';
+import { Hero } from '@/components/Hero';
+import { HowItWorks } from '@/components/HowItWorks';
+import { Footer } from '@/components/Footer';
+import { ClassCard } from '@/components/ClassCard';
+import { ClassDetail } from '@/components/ClassDetail';
+import { BookingForm } from '@/components/BookingForm';
+import { BookingSuccess } from '@/components/BookingSuccess';
+import { MapView } from '@/components/MapView';
+import { StudioListingModal } from '@/components/StudioListingModal';
+import { AdminDashboard } from '@/components/AdminDashboard';
+import { AuthPage } from '@/components/AuthPage';
+import { StudioOwnerDashboard } from '@/components/StudioOwnerDashboard';
 
-function App() {
-  const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
+type View =
+  | { name: 'home' }
+  | { name: 'class'; cls: ClassItem }
+  | { name: 'booking'; cls: ClassItem }
+  | { name: 'success'; className: string }
+  | { name: 'admin' }
+  | { name: 'studio' }
+  | { name: 'auth' };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) return;
+function matchesAge(cls: ClassItem, age: number) {
+  return cls.age_min <= age && (cls.age_max === null || cls.age_max >= age);
+}
 
-    setStatus('loading');
-    setErrorMessage('');
+function PlatformApp() {
+  const { user, isAdmin, ownedStoreId } = useAuth();
+  const { t } = useI18n();
+  const [view, setView] = useState<View>({ name: 'home' });
+  const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [loadError, setLoadError] = useState(false);
+  const [listingOpen, setListingOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [filterArea, setFilterArea] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [filterAge, setFilterAge] = useState('all');
 
-    // Παίρνουμε τα κλειδιά της Supabase αυτόματα από το αρχείο .env
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      setStatus('error');
-      setErrorMessage('Λείπουν οι ρυθμίσεις σύνδεσης (.env αρχείο).');
-      return;
-    }
-
-    try {
-      const response = await fetch(`${supabaseUrl}/rest/v1/subscribers`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': supabaseAnonKey,
-          'Authorization': `Bearer ${supabaseAnonKey}`,
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({ email: email.trim() })
-      });
-
-      if (response.ok) {
-        setStatus('success');
-        setEmail('');
-      } else {
-        // Αν το email υπάρχει ήδη, η Supabase επιστρέφει σφάλμα 409
-        if (response.status === 409) {
-          setErrorMessage('Αυτό το email είναι ήδη εγγεγραμμένο!');
-        } else {
-          setErrorMessage('Κάτι πήγε στραβά. Δοκιμάστε ξανά.');
-        }
-        setStatus('error');
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('classes')
+        .select('*, store:stores(*)')
+        .order('created_at', { ascending: false });
+      if (cancelled) return;
+      if (error) {
+        console.error('Error fetching classes:', error);
+        setLoadError(true);
+        return;
       }
-    } catch (error) {
-      setStatus('error');
-      setErrorMessage('Αποτυχία σύνδεσης με τη βάση δεδομένων.');
-    }
+      setClasses((data ?? []) as ClassItem[]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filteredClasses = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const ageNum = filterAge === 'all' ? null : Number(filterAge);
+    return classes.filter((cls) => {
+      if (filterArea !== 'all' && cls.store?.area !== filterArea) return false;
+      if (filterCategory !== 'all' && cls.category !== filterCategory) return false;
+      if (ageNum !== null && !matchesAge(cls, ageNum)) return false;
+      if (q) {
+        const haystack = `${cls.title} ${cls.instructor} ${cls.store?.name ?? ''}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [classes, search, filterArea, filterCategory, filterAge]);
+
+  const activeFilterCount =
+    [search.trim() !== '', filterArea !== 'all', filterCategory !== 'all', filterAge !== 'all'].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setSearch('');
+    setFilterArea('all');
+    setFilterCategory('all');
+    setFilterAge('all');
   };
 
+  const handleAdminClick = () => {
+    if (user && isAdmin) setView({ name: 'admin' });
+    else if (user && ownedStoreId) setView({ name: 'studio' });
+    else setView({ name: 'auth' });
+  };
+
+  const handleBookingSubmit = async (input: BookingInput) => {
+    const { error } = await supabase.from('bookings').insert([input]);
+    if (error) throw error;
+    const cls = view.name === 'booking' ? view.cls : null;
+    setView({ name: 'success', className: cls?.title ?? '' });
+  };
+
+  const goHome = () => setView({ name: 'home' });
+
+  if (view.name === 'admin') return <AdminDashboard onBack={goHome} />;
+  if (view.name === 'studio') return <StudioOwnerDashboard onBack={goHome} />;
+  if (view.name === 'auth') return <AuthPage onBack={goHome} />;
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between font-sans relative overflow-hidden">
-      {/* Background Glow */}
-      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
+    <div className="min-h-screen flex flex-col bg-stone-50 font-sans text-stone-900">
+      <Header
+        onLogoClick={goHome}
+        onAdminClick={handleAdminClick}
+        filterArea={filterArea}
+        onSelectArea={setFilterArea}
+      />
 
-      {/* Top Header / Logo */}
-      <header className="container mx-auto px-6 py-8 flex justify-between items-center relative z-10">
-        <div className="flex items-center space-x-2">
-          <Globe className="h-6 w-6 text-blue-500" />
-          <span className="text-xl font-bold tracking-wider bg-gradient-to-r bg-clip-text text-transparent from-white to-slate-400">
-            Book@Class
-          </span>
-        </div>
-      </header>
+      {view.name === 'home' && (
+        <main className="flex-1">
+          <Hero
+            onSearch={setSearch}
+            searchValue={search}
+            filterArea={filterArea}
+            setFilterArea={setFilterArea}
+            filterCategory={filterCategory}
+            setFilterCategory={setFilterCategory}
+            filterAge={filterAge}
+            setFilterAge={setFilterAge}
+            activeFilterCount={activeFilterCount}
+            onClear={clearFilters}
+            onListStudio={() => setListingOpen(true)}
+          />
 
-      {/* Main Content */}
-      <main className="container mx-auto px-6 py-12 flex flex-col items-center justify-center text-center flex-grow relative z-10 max-w-2xl">
-        {/* Badge */}
-        <div className="inline-flex items-center space-x-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-1.5 text-sm text-blue-400 font-medium mb-8 animate-pulse">
-          <Timer className="h-4 w-4" />
-          <span>Έρχεται Σύντομα / Coming Soon</span>
-        </div>
+          <section id="classes" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 scroll-mt-20">
+            <h2 className="text-3xl font-extrabold text-stone-900 mb-6">{t('nav.browse')}</h2>
+            {loadError ? (
+              <p className="text-rose-600 text-sm font-medium">{t('admin.errorSave')}</p>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredClasses.map((cls) => (
+                    <ClassCard key={cls.id} cls={cls} onSelect={() => setView({ name: 'class', cls })} />
+                  ))}
+                </div>
+                {filteredClasses.length > 0 && (
+                  <div className="mt-12">
+                    <MapView classes={filteredClasses} onSelectClass={(cls) => setView({ name: 'class', cls })} />
+                  </div>
+                )}
+              </>
+            )}
+          </section>
 
-        {/* Τίτλος */}
-        <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
-          Κάτι εξαιρετικό είναι{' '}
-          <span className="bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500 bg-clip-text text-transparent">
-            καθ' οδόν
-          </span>
-        </h1>
+          <HowItWorks />
+        </main>
+      )}
 
-        {/* Περιγραφή */}
-        <p className="text-slate-400 text-lg md:text-xl mb-12 leading-relaxed">
-          Ετοιμάζουμε τη νέα μας πλατφόρμα. Συμπληρώστε το email σας παρακάτω για να ενημερωθείτε πρώτοι μόλις είμαστε live!
-        </p>
+      {view.name === 'class' && (
+        <main className="flex-1">
+          <ClassDetail
+            cls={view.cls}
+            onBack={goHome}
+            onBook={() => setView({ name: 'booking', cls: view.cls })}
+          />
+        </main>
+      )}
 
-        {/* Φόρμα Email */}
-        <div className="w-full max-w-md bg-slate-900/50 border border-slate-800 rounded-2xl p-2 backdrop-blur-sm">
-          {status !== 'success' ? (
-            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
-              <div className="relative flex-grow">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500 h-5 w-5" />
-                <input
-                  type="email"
-                  required
-                  placeholder="Εισάγετε το email σας..."
-                  value={email}
-                  disabled={status === 'loading'}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-11 pr-4 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500/50 transition-colors"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={status === 'loading'}
-                className="bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm rounded-xl px-6 py-3 transition-all duration-200 shadow-lg shadow-blue-600/20 disabled:opacity-50"
-              >
-                {status === 'loading' ? 'Αποστολή...' : 'Ενημέρωσή με'}
-              </button>
-            </form>
-          ) : (
-            <div className="flex items-center justify-center space-x-2 py-3 text-green-400 font-medium">
-              <CheckCircle2 className="h-5 w-5 shrink-0" />
-              <span>Ευχαριστούμε! Θα ενημερωθείτε σύντομα.</span>
-            </div>
-          )}
+      {view.name === 'booking' && (
+        <main className="flex-1">
+          <BookingForm
+            cls={view.cls}
+            onBack={() => setView({ name: 'class', cls: view.cls })}
+            onSubmit={handleBookingSubmit}
+          />
+        </main>
+      )}
 
-          {status === 'error' && (
-            <p className="text-red-400 text-xs mt-2 font-medium">{errorMessage}</p>
-          )}
-        </div>
-      </main>
+      {view.name === 'success' && (
+        <main className="flex-1">
+          <BookingSuccess className={view.className} onBack={goHome} />
+        </main>
+      )}
 
-      {/* Footer */}
-      <footer className="container mx-auto px-6 py-8 flex flex-col sm:flex-row justify-between items-center border-t border-slate-900 text-sm text-slate-500 relative z-10 gap-4">
-        <p>© {new Date().getFullYear()} Book@Class. All rights reserved.</p>
-        <div className="flex space-x-4">
-          <a href="#" className="hover:text-slate-300 transition-colors">
-            <Instagram className="h-5 w-5" />
-          </a>
-          <a href="#" className="hover:text-slate-300 transition-colors">
-            <Facebook className="h-5 w-5" />
-          </a>
-        </div>
-      </footer>
+      <Footer onListStudio={() => setListingOpen(true)} />
+
+      <StudioListingModal open={listingOpen} onClose={() => setListingOpen(false)} />
     </div>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <I18nProvider>
+      <AccessibilityProvider>
+        <AuthProvider>
+          <PlatformApp />
+        </AuthProvider>
+      </AccessibilityProvider>
+    </I18nProvider>
+  );
+}
