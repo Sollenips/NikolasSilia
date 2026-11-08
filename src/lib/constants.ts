@@ -8,6 +8,7 @@ export const AREAS = [
 export type Area = (typeof AREAS)[number];
 
 export const CATEGORIES = [
+  'Martial Arts',
   'Music',
   'Dance',
   'Art',
@@ -23,6 +24,7 @@ export const CATEGORIES = [
 export type Category = (typeof CATEGORIES)[number];
 
 export const CATEGORY_COLORS: Record<string, string> = {
+  'Martial Arts': 'bg-rose-100 text-rose-800',
   Music: 'bg-violet-100 text-violet-800',
   Dance: 'bg-pink-100 text-pink-800',
   Art: 'bg-amber-100 text-amber-800',
@@ -37,6 +39,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export const CATEGORY_CB_BADGES: Record<string, string> = {
+  'Martial Arts': 'ring-2 ring-stone-900',
   Music: 'ring-2 ring-stone-800',
   Dance: 'ring-2 ring-stone-600',
   Art: 'ring-2 ring-stone-500',

@@ -1,39 +1,22 @@
 import { useState } from 'react';
-import { X, Check, Store } from 'lucide-react';
+import { X, Check, Store, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useI18n } from '@/lib/i18n';
-import { AREAS } from '@/lib/constants';
+import { StudioFields } from '@/components/StudioFields';
+import { EMPTY_STUDIO_VALUES, type StudioFormValues } from '@/lib/studioForm';
 
 type Props = {
   open: boolean;
   onClose: () => void;
 };
 
-type ListingForm = {
-  studioName: string;
-  email: string;
-  phone: string;
-  area: string;
-  studioInfo: string;
-};
-
-const EMPTY_FORM: ListingForm = { studioName: '', email: '', phone: '', area: '', studioInfo: '' };
-
-const INPUT_CLASS =
-  'w-full px-4 py-3 rounded-xl border border-stone-200 text-stone-800 placeholder:text-stone-400 outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-100 transition-all';
-const LABEL_CLASS = 'block text-xs font-semibold text-stone-500 uppercase tracking-wide mb-2';
-
 export function StudioListingModal({ open, onClose }: Props) {
-  const { t, tArea } = useI18n();
-  const [form, setForm] = useState<ListingForm>(EMPTY_FORM);
+  const { t } = useI18n();
+  const [form, setForm] = useState<StudioFormValues>(EMPTY_STUDIO_VALUES);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
   if (!open) return null;
-
-  const updateField = (field: keyof ListingForm) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-      setForm((current) => ({ ...current, [field]: e.target.value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,10 +27,20 @@ export function StudioListingModal({ open, onClose }: Props) {
       {
         email: form.email.trim().toLowerCase(),
         role: 'store',
-        name: form.studioName.trim(),
+        name: form.name.trim(),
         phone: form.phone.trim(),
         area: form.area,
-        studio_info: form.studioInfo.trim(),
+        description: form.description.trim(),
+        category: form.category,
+        address: form.address.trim(),
+        image_url: form.image_url || null,
+        photo_url_1: form.photo_url_1 || null,
+        photo_url_2: form.photo_url_2 || null,
+        floor: form.floor.trim() || null,
+        disability_access: form.disability_access,
+        rate_info: form.rate_info.trim() || null,
+        first_class_discount_pct: parseInt(form.first_class_discount_pct, 10) || 0,
+        weekly_schedule: form.weekly_schedule.trim() || null,
       },
     ]);
 
@@ -62,7 +55,7 @@ export function StudioListingModal({ open, onClose }: Props) {
 
   const handleClose = () => {
     setStatus('idle');
-    setForm(EMPTY_FORM);
+    setForm(EMPTY_STUDIO_VALUES);
     setErrorMsg('');
     onClose();
   };
@@ -73,7 +66,7 @@ export function StudioListingModal({ open, onClose }: Props) {
       onClick={handleClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="relative bg-gradient-to-br from-teal-700 via-teal-600 to-emerald-500 px-6 py-6">
@@ -109,73 +102,7 @@ export function StudioListingModal({ open, onClose }: Props) {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="px-6 py-6 space-y-4">
-            <div>
-              <label className={LABEL_CLASS}>{t('listing.studioName')}</label>
-              <input
-                type="text"
-                required
-                value={form.studioName}
-                onChange={updateField('studioName')}
-                placeholder={t('listing.studioNamePh')}
-                className={INPUT_CLASS}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={LABEL_CLASS}>{t('listing.email')}</label>
-                <input
-                  type="email"
-                  required
-                  value={form.email}
-                  onChange={updateField('email')}
-                  placeholder="you@example.com"
-                  className={INPUT_CLASS}
-                />
-              </div>
-              <div>
-                <label className={LABEL_CLASS}>{t('listing.phone')}</label>
-                <input
-                  type="tel"
-                  required
-                  value={form.phone}
-                  onChange={updateField('phone')}
-                  placeholder={t('listing.phonePh')}
-                  className={INPUT_CLASS}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className={LABEL_CLASS}>{t('listing.area')}</label>
-              <select
-                required
-                value={form.area}
-                onChange={updateField('area')}
-                className={`${INPUT_CLASS} bg-white`}
-              >
-                <option value="" disabled>
-                  {t('listing.areaPh')}
-                </option>
-                {AREAS.map((area) => (
-                  <option key={area} value={area}>
-                    {tArea(area)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className={LABEL_CLASS}>{t('listing.info')}</label>
-              <textarea
-                required
-                rows={4}
-                value={form.studioInfo}
-                onChange={updateField('studioInfo')}
-                placeholder={t('listing.infoPh')}
-                className={`${INPUT_CLASS} resize-none`}
-              />
-            </div>
+            <StudioFields values={form} onChange={setForm} />
 
             {status === 'error' && (
               <p className="text-sm text-rose-600 font-medium">{errorMsg}</p>
@@ -184,8 +111,9 @@ export function StudioListingModal({ open, onClose }: Props) {
             <button
               type="submit"
               disabled={status === 'submitting'}
-              className="w-full py-3.5 rounded-xl bg-teal-600 text-white font-semibold text-base hover:bg-teal-700 active:scale-[0.98] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3.5 rounded-xl bg-teal-600 text-white font-semibold text-base hover:bg-teal-700 active:scale-[0.98] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
+              {status === 'submitting' && <Loader2 className="w-4 h-4 animate-spin" />}
               {status === 'submitting' ? t('listing.submitting') : t('listing.submit')}
             </button>
 

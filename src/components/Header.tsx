@@ -25,8 +25,6 @@ export function Header({ onLogoClick, onAdminClick, onListSchool, schools, filte
   const schoolMenuRef = useRef<HTMLDivElement>(null);
   const a11yMenuRef = useRef<HTMLDivElement>(null);
 
-  const toggleLang = () => setLang(lang === 'en' ? 'el' : 'en');
-
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       const target = e.target as Node;
