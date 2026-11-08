@@ -8,7 +8,7 @@ const dict: Dict = {
   // Header
   'nav.browse': { en: 'Classes', el: 'Μαθήματα' },
   'nav.howItWorks': { en: 'How It Works', el: 'Πώς Λειτουργεί' },
-  'nav.schools': { en: 'Schools', el: 'Σχολεία' },
+  'nav.schools': { en: 'Schools', el: 'Σχολές' },
   'nav.book': { en: 'Book', el: 'Κράτηση' },
   'nav.yourClass': { en: '@Class', el: '@Class' },
   'nav.accessibility': { en: 'Accessibility', el: 'Προσβασιμότητα' },
