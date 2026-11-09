@@ -314,9 +314,9 @@ const dict: Dict = {
   'upload.change': { en: 'Replace', el: 'Αντικατάσταση' },
   'upload.remove': { en: 'Remove', el: 'Αφαίρεση' },
   'upload.uploading': { en: 'Uploading...', el: 'Ανέβασμα...' },
-  'upload.hint': { en: 'JPEG, PNG or WebP, up to 5 MB', el: 'JPEG, PNG ή WebP, έως 5 MB' },
+  'upload.hint': { en: 'JPEG, PNG or WebP, up to 2 MB', el: 'JPEG, PNG ή WebP, έως 2 MB' },
   'upload.invalidType': { en: 'Please choose a JPEG, PNG or WebP image.', el: 'Επίλεξε εικόνα JPEG, PNG ή WebP.' },
-  'upload.tooLarge': { en: 'That image is larger than 5 MB.', el: 'Η εικόνα ξεπερνά τα 5 MB.' },
+  'upload.tooLarge': { en: 'That image is larger than 2 MB.', el: 'Η εικόνα ξεπερνά τα 2 MB.' },
   'upload.failed': { en: 'The image could not be uploaded. Please try again.', el: 'Η εικόνα δεν ανέβηκε. Δοκίμασε ξανά.' },
 
   // Studio listing request
