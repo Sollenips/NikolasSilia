@@ -46,7 +46,7 @@ export function StudioFields({ values, onChange }: Props) {
         <div>
           <label className={studioLabelCls}>{t('form.area')}</label>
           <select value={values.area} onChange={textOf('area')} required className={studioInputCls}>
-            <option value="" disabled>{t('listing.areaPh')}</option>
+            <option value="" disabled>{t('Επιλέξτε περιοχή')}</option>
             {AREAS.map((area) => (
               <option key={area} value={area}>{tArea(area)}</option>
             ))}
